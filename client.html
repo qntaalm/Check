@@ -1,43 +1,106 @@
+تفضل، هذا هو كود ملف `client.html` بالكامل بعد التعديلات والتحسينات الأمنية التي تمنع الأخطاء وتكرار الاتصال.
+
+كل ما عليك فعله هو نسخ هذا الكود بالكامل واستبدال محتوى الملف القديم به، مع تغيير الـ `APP_ID` في السطر 41 بكودك الخاص:
+
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>صفحة العميل - إرسال البث</title>
+    
     <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.18.0.js"></script>
+    
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background: #f4f4f9; }
-        #local-video { width: 400px; height: 300px; border: 2px solid #333; margin: 20px auto; background: #000; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        #local-video {
+            width: 100%;
+            max-width: 500px;
+            height: 375px;
+            border: 2px solid #333;
+            border-radius: 10px;
+            margin: 20px auto;
+            background-color: #000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
-    <h2>بث الكاميرا والمايك إلى الإدارة</h2>
+    <h2>بث الكاميرا والمايك إلى لوحة الإدارة</h2>
+    <p>اضغط على الزر أدناه لبدء مشاركة الكاميرا والصوت مباشرة.</p>
+    
     <button id="join-btn">بدء البث المباشر</button>
+    
     <div id="local-video"></div>
 
     <script>
-        // ضع هنا الـ App ID الذي حصلت عليه من موقع Agora
+        // ⚠️ هام جداً: استبدل النص أدناه بـ App ID الحقيقي الخاص بك من موقع Agora
         const APP_ID = "d99a16c4967f47c4962d1d4e721587bb"; 
-        const CHANNEL = "admin_channel"; // اسم الغرفة المشتركة
+        const CHANNEL = "admin_channel"; // اسم الغرفة المشتركة مع الإدارة
 
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         let localTracks = [];
+        const joinBtn = document.getElementById('join-btn');
 
-        document.getElementById('join-btn').onclick = async () => {
-            // الانضمام للغرفة
-            await client.join(APP_ID, CHANNEL, null, null);
-            
-            // إنشاء مسار الصوت والكاميرا من جهاز العميل
-            localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
-            
-            // عرض الكاميرا محلياً للعميل
-            localTracks[1].play('local-video');
-            
-            // نشر (إرسال) الصوت والفيديو للإدارة
-            await client.publish(localTracks);
-            alert("أنت الآن تبث مباشرة للإدارة!");
+        joinBtn.onclick = async () => {
+            // إذا كان الزر معطلاً بالفعل نتيجة ضغطة سابقة، نوقف العملية
+            if (joinBtn.disabled) return;
+
+            try {
+                // تعطيل الزر فوراً لمنع الضغط المتكرر الذي يسبب الأخطاء
+                joinBtn.disabled = true;
+                joinBtn.innerText = "جاري الاتصال بالبث...";
+
+                // الانضمام إلى الغرفة في سيرفر Agora
+                await client.join(APP_ID, CHANNEL, null, null);
+                
+                // طلب صلاحية المايك والكاميرا وإنشاء مسارات البث
+                localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+                
+                // عرض الكاميرا محلياً للعميل في الحاوية المخصصة
+                localTracks[1].play('local-video');
+                
+                // نشر (إرسال) الصوت والفيديو لتستقبله صفحة الإدارة
+                await client.publish(localTracks);
+                
+                // تحديث نص الزر ليوضح نجاح العملية
+                joinBtn.innerText = "أنت تبث الآن مباشرة!";
+                
+            } catch (error) {
+                console.error("حدث خطأ أثناء الاتصال:", error);
+                
+                // إعادة تفعيل الزر في حال حدوث خطأ ليتمكن العميل من المحاولة مجدداً
+                joinBtn.disabled = false;
+                joinBtn.innerText = "بدء البث المباشر";
+                
+                alert("فشل الاتصال! تأكد من صحة كود الـ App ID، وتأكد من إعطاء صلاحية الكاميرا والمايك للمتصفح.");
+            }
         };
     </script>
 </body>
 </html>
+
+```
