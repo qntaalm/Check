@@ -70,7 +70,7 @@
                 joinBtn.innerText = "جاري الاتصال بالبث...";
 
                 // الانضمام إلى الغرفة في سيرفر Agora
-                await client.join(APP_ID, CHANNEL, null, null);
+                await client.join(APP_ID, CHANNEL, "007eJxTYPDtmG22bAdz9o65s4UKvtYt25zy4fV51jnzokPt9Q+cKzmtwGCWkpRibmmQnJKSbGmSamRmYWhqaGaUlphoapCUmmJs8VwxKqshkJHhWyk/AyMUgvi8DIkpuZl58ckZiXl5qTkMDAAAfSSH", null);
                 
                 // طلب صلاحية المايك والكاميرا وإنشاء مسارات البث
                 localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
