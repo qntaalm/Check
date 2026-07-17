@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>صفحة العميل - إرسال البث</title>
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.18.0.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background: #f4f4f9; }
+        #local-video { width: 400px; height: 300px; border: 2px solid #333; margin: 20px auto; background: #000; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <h2>بث الكاميرا والمايك إلى الإدارة</h2>
+    <button id="join-btn">بدء البث المباشر</button>
+    <div id="local-video"></div>
+
+    <script>
+        // ضع هنا الـ App ID الذي حصلت عليه من موقع Agora
+        const APP_ID = "d99a16c4967f47c4962d1d4e721587bb"; 
+        const CHANNEL = "admin_channel"; // اسم الغرفة المشتركة
+
+        const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        let localTracks = [];
+
+        document.getElementById('join-btn').onclick = async () => {
+            // الانضمام للغرفة
+            await client.join(APP_ID, CHANNEL, null, null);
+            
+            // إنشاء مسار الصوت والكاميرا من جهاز العميل
+            localTracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+            
+            // عرض الكاميرا محلياً للعميل
+            localTracks[1].play('local-video');
+            
+            // نشر (إرسال) الصوت والفيديو للإدارة
+            await client.publish(localTracks);
+            alert("أنت الآن تبث مباشرة للإدارة!");
+        };
+    </script>
+</body>
+</html>
