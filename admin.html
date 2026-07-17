@@ -2,42 +2,103 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم - استقبال البث</title>
+    
     <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.18.0.js"></script>
+    
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background: #222; color: white; }
-        #remote-video-container { width: 500px; height: 375px; border: 2px dashed #007bff; margin: 20px auto; background: #000; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            background-color: #222;
+            color: white;
+        }
+        #remote-video-container {
+            width: 100%;
+            max-width: 600px;
+            height: 450px;
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            margin: 20px auto;
+            background-color: #000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+        button:disabled {
+            background-color: #555;
+            color: #aaa;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
     <h2>لوحة الإدارة - مراقبة بث العميل</h2>
+    <p>اضغط على الزر أدناه لتفعيل نظام الاستقبال وانتظار بث العميل.</p>
+    
     <button id="listen-btn">فتح نظام الاستقبال</button>
+    
     <div id="remote-video-container"></div>
 
     <script>
-        // ضع هنا نفس الـ App ID الخاص بك
+        // ⚠️ هام جداً: ضع هنا نفس الـ App ID الذي وضعته في صفحة العميل
         const APP_ID = "d99a16c4967f47c4962d1d4e721587bb"; 
-        const CHANNEL = "admin_channel"; 
+        const CHANNEL = "admin_channel"; // اسم الغرفة المشتركة
 
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        const listenBtn = document.getElementById('listen-btn');
 
-        document.getElementById('listen-btn').onclick = async () => {
-            await client.join(APP_ID, CHANNEL, null, null);
-            alert("تم تفعيل نظام الاستقبال.. بانتظار بث العميل");
+        listenBtn.onclick = async () => {
+            // منع الضغط المتكرر في حال كان الزر معطلاً
+            if (listenBtn.disabled) return;
+
+            try {
+                // تعطيل الزر فوراً لمنع حدوث خطأ Connecting State
+                listenBtn.disabled = true;
+                listenBtn.innerText = "جاري فتح نظام الاستقبال...";
+
+                // الانضمام إلى الغرفة لانتظار الإشارات
+                await client.join(APP_ID, CHANNEL, null, null);
+                
+                listenBtn.innerText = "نظام الاستقبال نشط (بانتظار العميل...)";
+                
+            } catch (error) {
+                console.error("حدث خطأ في الإدارة:", error);
+                
+                // إعادة تفعيل الزر في حال حدوث خطأ
+                listenBtn.disabled = false;
+                listenBtn.innerText = "فتح نظام الاستقبال";
+                alert("فشل تشغيل نظام الاستقبال. تأكد من كود الـ App ID.");
+            }
         };
 
-        // عندما يقوم العميل بالنشر، تستقبله الإدارة هنا فوراً
+        // هذا الحدث يعمل تلقائياً فور قيام أي عميل ببدء البث (Publish)
         client.on("user-published", async (user, mediaType) => {
+            // الاشتراك في بث العميل القادم
             await client.subscribe(user, mediaType);
             
+            // إذا كان البث القادم عبارة عن فيديو
             if (mediaType === "video") {
-                // تشغيل فيديو العميل في حاوية الإدارة
+                // عرض فيديو العميل داخل حاوية الأدمن المخصصة له
                 user.videoTrack.play("remote-video-container");
             }
+            
+            // إذا كان البث القادم يحتوي على صوت
             if (mediaType === "audio") {
-                // تشغيل صوت العميل
+                // تشغيل صوت العميل في سماعات الأدمن
                 user.audioTrack.play();
             }
         });
